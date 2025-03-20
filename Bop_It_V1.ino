@@ -207,6 +207,7 @@ void sendBCD(int value, int pinA, int pinB, int pinC, int pinD)
     digitalWrite(pinB, (value >> 1) & 0x1);
     digitalWrite(pinC, (value >> 2) & 0x1);
     digitalWrite(pinD, (value >> 3) & 0x1);
+
 }
 
 //Check for the proper input depending on what is required    
@@ -229,8 +230,8 @@ void assignNewTask()
     //Serial print right now, use for the speaker later?
     switch (currentTask)
     {
-        case PRESSURE: Serial.println("Task: PRESS the pressure sensor!"); break;
-        case MIC_INPUT: Serial.println("Task: SHOUT into the mic!"); break;
-        case ROTARY: Serial.println("Task: TURN the rotary encoder!"); break;
+        case SQUEEZE: Serial.println("Task: PRESS the pressure sensor!"); break;
+        case YELL: Serial.println("Task: SHOUT into the mic!"); break;
+        case CRANK: Serial.println("Task: TURN the rotary encoder!"); break;
     }
 }
