@@ -4,7 +4,7 @@
 
 #define ROTARY_SENSOR_CLK 25
 
-#define ROTARY_SENSOR_DT 26 //MAY NOT BE NEEDED, WE ONLY NEED TO CHECK FOR ANY MOVEMENT
+//#define ROTARY_SENSOR_DT 26 //MAY NOT BE NEEDED, WE ONLY NEED TO CHECK FOR ANY MOVEMENT
 
 //UNDEFINED PINS
 #define RED_LED
@@ -216,7 +216,8 @@ bool taskCompleted()
     switch (currentTask) 
     {
         case SQUEEZE: return digitalRead(PRESSURE_SENSOR) == LOW;
-        case YELL: return digitalRead(MIC) == LOW;
+        //Analog input, adjust as needed, goes on scale of 0 to 1023
+        case YELL: return analogRead(MIC) > 512;
         case CRANK: return checkRotarySensor();
     }
     return false;
