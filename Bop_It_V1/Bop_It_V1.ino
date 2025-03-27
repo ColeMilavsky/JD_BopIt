@@ -1,20 +1,20 @@
 //Pins assigned to our components
-#define PRESSURE_SENSOR 23
-#define MIC 24
+#define PRESSURE_SENSOR 0       //Analaog Input
+#define MIC 15                  //Analog Equivalent is 1
 
-#define ROTARY_SENSOR_CLK 25
+#define ROTARY_SENSOR_CLK 16
 
 //#define ROTARY_SENSOR_DT 26 //MAY NOT BE NEEDED, WE ONLY NEED TO CHECK FOR ANY MOVEMENT
 
 //UNDEFINED PINS
 #define RED_LED
 #define GREEN_LED
-#define SPEAKER
+#define SPEAKER       //Pins 0 and 1 are used
 #define START_BUTTON
 
 //HEX PINS
-#define TENS_A 2
-#define TENS_B 3
+#define TENS_A 15
+#define TENS_B 16
 #define TENS_C 4
 #define TENS_D 5
 
