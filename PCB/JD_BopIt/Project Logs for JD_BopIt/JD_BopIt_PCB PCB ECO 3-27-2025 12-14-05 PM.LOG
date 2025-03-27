@@ -1,0 +1,10 @@
+Removed Pin From Net: NetName=VCC Pin=J1-01
+Removed Pin From Net: NetName=VCC Pin=Q1-1
+Added Pin To Net: NetName=VCC Pin=J7-01
+Added Pin To Net: NetName=VCC Pin=J8-02
+Added Pin To Net: NetName=NetJ1_01 Pin=J1-01
+Added Pin To Net: NetName=NetJ1_01 Pin=Q1-1
+Added Net: Name=NetJ1_01
+Added Member To Class: ClassName=JD_BopIt_Schematic Member=Component R5 10K
+Added Rule: Name=Schematic Supply Nets
+Added Rule: Name=Schematic Supply Nets_1

@@ -1,0 +1,10 @@
+Board Information Report
+Filename     : C:\Users\Public\Documents\Altium\JD_BopIt\JD_BopIt_PCB.PcbDoc
+Date         : 3/25/2025
+Time         : 3:35:52 PM
+Time Elapsed : 00:00:00
+
+General
+    Board Size, 3025milsx3295mils
+    Components on board, 25
+count : 2
