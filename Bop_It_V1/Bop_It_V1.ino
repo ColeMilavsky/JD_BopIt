@@ -1,27 +1,30 @@
 //Pins assigned to our components
-#define PRESSURE_SENSOR 0       //Analaog Input
+#define PRESSURE_SENSOR 14       //Analaog Input
 #define MIC 15                  //Analog Equivalent is 1
 
 #define ROTARY_SENSOR_CLK 16
 
-//#define ROTARY_SENSOR_DT 26 //MAY NOT BE NEEDED, WE ONLY NEED TO CHECK FOR ANY MOVEMENT
-
-//UNDEFINED PINS
+//HEX PINS
 #define RED_LED 18
 #define GREEN_LED 19
-#define SPEAKER       //Pins 0 and 1 are used
 #define START_BUTTON 4
 
 //HEX PINS
-#define TENS_A 15
-#define TENS_B 16
-#define TENS_C 4
-#define TENS_D 5
+#define TENS_A 9
+#define TENS_B 10
+#define TENS_C 2
+#define TENS_D 3
 
-#define ONES_A 11
-#define ONES_B 12
-#define ONES_C 13
-#define ONES_D 14
+#define ONES_A 5
+#define ONES_B 6
+#define ONES_C 7
+#define ONES_D 8
+
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
+
+SoftwareSerial mySerial(0, 1); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
 
 //Score at 0
 int score = 0;
@@ -85,6 +88,10 @@ void setup() {
 
     //Sets baud rate, sstandard value
     Serial.begin(9600);
+
+    mySerial.begin(9600);
+
+    myDFPlayer.volume(20);
 }
 
 void loop() {
@@ -187,6 +194,19 @@ void handleAction()
 
     //After successful attempt, we need a new task
     assignNewTask();
+
+    if (currentTask == SQUEEZE) 
+    {
+        myDFPlayer.play(1); // Play 0001.mp3
+    } 
+    else if (currentTask == YELL)
+    {
+        myDFPlayer.play(2); // Play 0002.mp3
+    } 
+    else if (currentTask == CRANK) 
+    {
+        myDFPlayer.play(3); // Play 0003.mp3
+    }
 }
 
 //Will update score for both hexes
