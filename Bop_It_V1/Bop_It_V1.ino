@@ -7,10 +7,10 @@
 //#define ROTARY_SENSOR_DT 26 //MAY NOT BE NEEDED, WE ONLY NEED TO CHECK FOR ANY MOVEMENT
 
 //UNDEFINED PINS
-#define RED_LED
-#define GREEN_LED
+#define RED_LED 18
+#define GREEN_LED 19
 #define SPEAKER       //Pins 0 and 1 are used
-#define START_BUTTON
+#define START_BUTTON 4
 
 //HEX PINS
 #define TENS_A 15
