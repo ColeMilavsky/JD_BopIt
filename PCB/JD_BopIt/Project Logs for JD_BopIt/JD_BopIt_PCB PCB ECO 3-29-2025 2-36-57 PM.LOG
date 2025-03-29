@@ -1,0 +1,3 @@
+Removed Pin From Net: NetName=GND Pin=R5-1
+Removed Member From Class: ClassName=JD_BopIt_Schematic Member=R5
+Added Member To Class: ClassName=JD_BopIt_Schematic Member=Component J4 HTSW-101-07-S-T
