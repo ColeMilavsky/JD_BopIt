@@ -23,7 +23,7 @@
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 
-SoftwareSerial mySerial(0, 1); // RX, TX
+//SoftwareSerial mySerial(0, 1); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 
 //Score at 0
@@ -61,11 +61,9 @@ void setup() {
     pinMode(PRESSURE_SENSOR, INPUT);       
     pinMode(MIC, INPUT); //May have to switch to analog?                
     pinMode(ROTARY_SENSOR_CLK, INPUT);     
-    pinMode(ROTARY_SENSOR_DT, INPUT);
     pinMode(START_BUTTON, INPUT_PULLUP); //Input pullup useful for buttons in general
 
     //Speaker and LED output
-    pinMode(SPEAKER, OUTPUT);
     pinMode(RED_LED, OUTPUT);
     pinMode(GREEN_LED, OUTPUT);
 
@@ -86,20 +84,33 @@ void setup() {
     //Initialize our hex to be 0
     updateDisplay(0);
 
+    assignNewTask();
+
     //Sets baud rate, sstandard value
     Serial.begin(9600);
 
-    mySerial.begin(9600);
+    // Initialize the DFPlayer Mini with the hardware serial
+    if (!myDFPlayer.begin(Serial)) {
+      while(true) {
+        digitalWrite(RED_LED, HIGH);
+        delay(1000);
+        digitalWrite(RED_LED, LOW);
+        delay(1000);
+      }
+    }
+    
+    //mySerial.begin(9600);
 
     myDFPlayer.volume(20);
 }
 
 void loop() {
-
+    //digitalWrite(GREEN_LED, HIGH);
     //Before start or if they take too long
     if (!gameRunning) 
     {
         Serial.println("Press to Start!");
+        
         //Input pullup check
         if (digitalRead(START_BUTTON) == LOW) 
         {
@@ -145,7 +156,18 @@ void startGame()
 void gameOver() 
 {
     Serial.println("Game Over!");
+    if(score==100)
+    {
+    myDFPlayer.play(4);
+    delay(2000);
+    }
+    else
+    {
+    myDFPlayer.play(5);
+    delay(2000);
+    }
     gameRunning = false;
+    score = 0;
 }
 
 bool checkRotarySensor() 
@@ -198,14 +220,17 @@ void handleAction()
     if (currentTask == SQUEEZE) 
     {
         myDFPlayer.play(1); // Play 0001.mp3
+        delay(2000);
     } 
     else if (currentTask == YELL)
     {
         myDFPlayer.play(2); // Play 0002.mp3
+        delay(2000);
     } 
     else if (currentTask == CRANK) 
     {
         myDFPlayer.play(3); // Play 0003.mp3
+        delay(2000);
     }
 }
 
