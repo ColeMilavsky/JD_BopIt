@@ -1,3 +1,4 @@
+#include <DFRobotDFPlayerMini.h>
 //Pins assigned to our components
 #define PRESSURE_SENSOR 14       //Analaog Input
 #define MIC 15                  //Analog Equivalent is 1
@@ -20,8 +21,6 @@
 #define ONES_C 7
 #define ONES_D 8
 
-#include <SoftwareSerial.h>
-#include <DFRobotDFPlayerMini.h>
 
 //SoftwareSerial mySerial(0, 1); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
@@ -38,7 +37,7 @@ enum Task { SQUEEZE, YELL, CRANK };
 Task currentTask;
 
 //Use an unconnected pin to make sure each game is different, using this in setup makes sure we dont get same random sequence
-const int RANDOM_SEED_PIN = A0;
+//const int RANDOM_SEED_PIN = A0;
 
 // BCD Encoding for our hex displays
 const byte segmentMap[10] = 
@@ -56,6 +55,9 @@ const byte segmentMap[10] =
 };
 
 void setup() {
+
+    //Sets baud rate, sstandard value
+    Serial.begin(9600);
 
     //INPUTS
     pinMode(PRESSURE_SENSOR, INPUT);       
@@ -81,27 +83,25 @@ void setup() {
     //Set our random seed to the unconnected pin for true randomness
 
     // Wait for user to press start and use timing for random seed
-    unsigned long waitStart = millis();
-    while (digitalRead(START_BUTTON) == HIGH) {
-      // Show a countdown or blink while waiting, optional
-    }
-    unsigned long seed = millis() - waitStart;
-    randomSeed(seed);
+    // unsigned long waitStart = millis();
+    // while (digitalRead(START_BUTTON) == HIGH) {
+    //   // Show a countdown or blink while waiting, optional
+    // }
+    // unsigned long seed = millis() - waitStart;
+    // randomSeed(seed);
 
     // Show the seed value to confirm it's different each time
-    updateDisplay(seed % 100);
-    delay(2000);
-    updateDisplay(0);  // Clear after showing
+    //updateDisplay(seed % 100);
+    //delay(2000);
 
 
 
     //Initialize our hex to be 0
-    updateDisplay(0);
+   
 
     //assignNewTask();
 
-    //Sets baud rate, sstandard value
-    Serial.begin(9600);
+    
 
     // Initialize the DFPlayer Mini with the hardware serial
     if (!myDFPlayer.begin(Serial)) {
@@ -112,10 +112,11 @@ void setup() {
         delay(1000);
       }
     }
-    
-    //mySerial.begin(9600);
+    delay(500);
+    updateDisplay(0);
 
-    myDFPlayer.volume(20);
+    //mySerial.begin(9600);
+    myDFPlayer.volume(10);
 }
 
 void loop() {
@@ -128,7 +129,10 @@ void loop() {
         //Input pullup check
         if (digitalRead(START_BUTTON) == LOW) 
         {
-            delay(500); // Debounce
+            digitalWrite(GREEN_LED, HIGH);
+            delay(200);
+            digitalWrite(GREEN_LED, LOW);
+            delay(2000); // Debounce
             startGame();
         }
     } 
@@ -138,7 +142,7 @@ void loop() {
         unsigned long currentTime = millis();
         
         //If the user takes too much time
-        if (currentTime - startTime >= timerInterval)
+        if ( (currentTime - startTime) >= timerInterval)
         {
             //Flash the red led
             digitalWrite(RED_LED, HIGH);
@@ -148,9 +152,8 @@ void loop() {
             gameOver();
             return;
         }
-
         // Check if a sensor is triggered
-        if (taskCompleted())
+        else if (taskCompleted())
         {
             handleAction();
         }
@@ -162,7 +165,26 @@ void startGame()
     gameRunning = true;
     score = 0;
     timerInterval = 3000;
+    
+    assignNewTask();
+    if (currentTask == SQUEEZE) 
+    {
+        myDFPlayer.play(1); // Play 0001.mp3
+        //delay(2000);
+    } 
+    else if (currentTask == YELL)
+    {
+        myDFPlayer.play(2); // Play 0002.mp3
+        //delay(2000);
+    } 
+    else if (currentTask == CRANK) 
+    {
+        myDFPlayer.play(3); // Play 0003.mp3
+        //delay(2000);
+    }
+   
     startTime = millis();
+    delay(200);
     //Serial.println("Game Started!");
 }
 
@@ -205,6 +227,7 @@ bool checkRotarySensor()
 //Handle an action triggered by any input
 void handleAction() 
 {
+
     //Increment score
     score++;
     //Serial.print("Score: ");
@@ -218,17 +241,19 @@ void handleAction()
         return;
     }
 
-    //Speeds up the time per action by 50 seconds with a minimum of half a second, adjust as needed
+    //Speeds up the time per action by 50 milliseconds with a minimum of half a second, adjust as needed
     timerInterval = max(500, timerInterval - 50);
-    startTime = millis();
+    //startTime = millis();
 
     //Flash the green led
     digitalWrite(GREEN_LED, HIGH);
     delay(200);
     digitalWrite(GREEN_LED, LOW);
+    
 
     // Update hex display
     updateDisplay(score);
+    delay(2000);
 
     //After successful attempt, we need a new task
     assignNewTask();
@@ -236,18 +261,21 @@ void handleAction()
     if (currentTask == SQUEEZE) 
     {
         myDFPlayer.play(1); // Play 0001.mp3
-        delay(2000);
+        //delay(2000);
     } 
     else if (currentTask == YELL)
     {
         myDFPlayer.play(2); // Play 0002.mp3
-        delay(2000);
+        //delay(2000);
     } 
     else if (currentTask == CRANK) 
     {
         myDFPlayer.play(3); // Play 0003.mp3
-        delay(2000);
+        //delay(2000);
     }
+    
+    startTime = millis();
+    //delay(200);
 }
 
 //Will update score for both hexes
@@ -288,8 +316,9 @@ void assignNewTask()
 {
     //Random task from our three options
     currentTask = static_cast<Task>(random(0, 3));
+    //currentTask = CRANK;
     
-    //Serial print right now, use for the speaker later?
+    // Serial print right now, use for the speaker later?
     // switch (currentTask)
     // {
     //     case SQUEEZE: Serial.println("Task: PRESS the pressure sensor!"); break;
