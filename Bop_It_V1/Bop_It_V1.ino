@@ -79,12 +79,26 @@ void setup() {
     pinMode(ONES_D, OUTPUT);
 
     //Set our random seed to the unconnected pin for true randomness
-    randomSeed(analogRead(RANDOM_SEED_PIN));
+
+    // Wait for user to press start and use timing for random seed
+    unsigned long waitStart = millis();
+    while (digitalRead(START_BUTTON) == HIGH) {
+      // Show a countdown or blink while waiting, optional
+    }
+    unsigned long seed = millis() - waitStart;
+    randomSeed(seed);
+
+    // Show the seed value to confirm it's different each time
+    updateDisplay(seed % 100);
+    delay(2000);
+    updateDisplay(0);  // Clear after showing
+
+
 
     //Initialize our hex to be 0
     updateDisplay(0);
 
-    assignNewTask();
+    //assignNewTask();
 
     //Sets baud rate, sstandard value
     Serial.begin(9600);
@@ -109,7 +123,7 @@ void loop() {
     //Before start or if they take too long
     if (!gameRunning) 
     {
-        Serial.println("Press to Start!");
+        //Serial.println("Press to Start!");
         
         //Input pullup check
         if (digitalRead(START_BUTTON) == LOW) 
@@ -149,25 +163,27 @@ void startGame()
     score = 0;
     timerInterval = 3000;
     startTime = millis();
-    Serial.println("Game Started!");
+    //Serial.println("Game Started!");
 }
 
 //For score of 100 or when missed action
 void gameOver() 
 {
-    Serial.println("Game Over!");
+    //Serial.println("Game Over!");
     if(score==100)
     {
-    myDFPlayer.play(4);
-    delay(2000);
+      myDFPlayer.play(5);
+      delay(2000);
     }
     else
     {
-    myDFPlayer.play(5);
-    delay(2000);
+      myDFPlayer.play(4);
+      delay(2000);
     }
     gameRunning = false;
     score = 0;
+    updateDisplay(score);
+    
 }
 
 bool checkRotarySensor() 
@@ -191,13 +207,13 @@ void handleAction()
 {
     //Increment score
     score++;
-    Serial.print("Score: ");
-    Serial.println(score);
+    //Serial.print("Score: ");
+    //Serial.println(score);
 
     //Check if the score is 100
     if (score > 99) 
     {
-        Serial.println("YOU WIN!");
+        //Serial.println("YOU WIN!");
         gameOver();
         return;
     }
@@ -262,7 +278,7 @@ bool taskCompleted()
     {
         case SQUEEZE: return digitalRead(PRESSURE_SENSOR) == LOW;
         //Analog input, adjust as needed, goes on scale of 0 to 1023
-        case YELL: return analogRead(MIC) > 512;
+        case YELL: return analogRead(MIC) > 800;
         case CRANK: return checkRotarySensor();
     }
     return false;
@@ -274,10 +290,10 @@ void assignNewTask()
     currentTask = static_cast<Task>(random(0, 3));
     
     //Serial print right now, use for the speaker later?
-    switch (currentTask)
-    {
-        case SQUEEZE: Serial.println("Task: PRESS the pressure sensor!"); break;
-        case YELL: Serial.println("Task: SHOUT into the mic!"); break;
-        case CRANK: Serial.println("Task: TURN the rotary encoder!"); break;
-    }
+    // switch (currentTask)
+    // {
+    //     case SQUEEZE: Serial.println("Task: PRESS the pressure sensor!"); break;
+    //     case YELL: Serial.println("Task: SHOUT into the mic!"); break;
+    //     case CRANK: Serial.println("Task: TURN the rotary encoder!"); break;
+    // }
 }
