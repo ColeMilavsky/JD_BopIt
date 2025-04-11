@@ -1,84 +1,80 @@
-//Pins assigned to our components
-#define PRESSURE_SENSOR 14       //Analaog Input
-#define MIC 15                  //Analog Equivalent is 1
+#include <DFRobotDFPlayerMini.h>
 
+// Pins assigned to our components
+#define PRESSURE_SENSOR 14       // Analog Input
+#define MIC 15                  // Analog Equivalent is 1
 #define ROTARY_SENSOR_CLK 16
-
-//HEX PINS
-#define RED_LED 18
-#define GREEN_LED 19
 #define START_BUTTON 4
 
-//HEX PINS
+// HEX PINS
+#define RED_LED 18
+#define GREEN_LED 19
 #define TENS_A 9
 #define TENS_B 10
 #define TENS_C 2
 #define TENS_D 3
-
 #define ONES_A 5
 #define ONES_B 6
 #define ONES_C 7
 #define ONES_D 8
 
-#include <SoftwareSerial.h>
-#include <DFRobotDFPlayerMini.h>
-
-//SoftwareSerial mySerial(0, 1); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 
-//Score at 0
+// Score and game timer variables
 int score = 0;
-//Start with three seconds per action
 int timerInterval = 3000;
 unsigned long startTime;
-bool gameRunning = false;
+bool taskSuccess = false;
 
-//Lists each of the tasks
+// Game states
+enum GameState {
+    WAITING_FOR_START,
+    GAME_RUNNING,
+    GAME_OVER
+};
+
+GameState currentState = WAITING_FOR_START;
+
+// Task enum
 enum Task { SQUEEZE, YELL, CRANK };
 Task currentTask;
 
-//Use an unconnected pin to make sure each game is different, using this in setup makes sure we dont get same random sequence
-const int RANDOM_SEED_PIN = A0;
-
-// BCD Encoding for our hex displays
-const byte segmentMap[10] = 
-{ 
-  0b00111111, // 0
-  0b00000110, // 1
-  0b01011011, // 2
-  0b01001111, // 3
-  0b01100110, // 4
-  0b01101101, // 5
-  0b01111101, // 6
-  0b00000111, // 7
-  0b01111111, // 8
-  0b01101111  // 9
+// BCD Encoding for hex displays
+const byte segmentMap[10] = { 
+    0b00111111, // 0
+    0b00000110, // 1
+    0b01011011, // 2
+    0b01001111, // 3
+    0b01100110, // 4
+    0b01101101, // 5
+    0b01111101, // 6
+    0b00000111, // 7
+    0b01111111, // 8
+    0b01101111  // 9
 };
 
 void setup() {
+    Serial.begin(9600);
 
-    //INPUTS
+    // INPUTS
     pinMode(PRESSURE_SENSOR, INPUT);       
-    pinMode(MIC, INPUT); //May have to switch to analog?                
+    pinMode(MIC, INPUT);
     pinMode(ROTARY_SENSOR_CLK, INPUT);     
-    pinMode(START_BUTTON, INPUT_PULLUP); //Input pullup useful for buttons in general
+    pinMode(START_BUTTON, INPUT_PULLUP); // Input pullup useful for buttons
 
-    //Speaker and LED output
+    // LED Output
     pinMode(RED_LED, OUTPUT);
     pinMode(GREEN_LED, OUTPUT);
 
-    //HEX DISPLAYS
+    // HEX DISPLAY Pins
     pinMode(TENS_A, OUTPUT);
     pinMode(TENS_B, OUTPUT);
     pinMode(TENS_C, OUTPUT);
     pinMode(TENS_D, OUTPUT);
-
     pinMode(ONES_A, OUTPUT);
     pinMode(ONES_B, OUTPUT);
     pinMode(ONES_C, OUTPUT);
     pinMode(ONES_D, OUTPUT);
-
-    //Set our random seed to the unconnected pin for true randomness
 
     // Wait for user to press start and use timing for random seed
     unsigned long waitStart = millis();
@@ -88,171 +84,133 @@ void setup() {
     unsigned long seed = millis() - waitStart;
     randomSeed(seed);
 
-    // Show the seed value to confirm it's different each time
-    updateDisplay(seed % 100);
-    delay(2000);
-    updateDisplay(0);  // Clear after showing
-
-
-
-    //Initialize our hex to be 0
-    updateDisplay(0);
-
-    //assignNewTask();
-
-    //Sets baud rate, sstandard value
-    Serial.begin(9600);
-
-    // Initialize the DFPlayer Mini with the hardware serial
+    // Initialize the DFPlayer Mini
     if (!myDFPlayer.begin(Serial)) {
-      while(true) {
-        digitalWrite(RED_LED, HIGH);
-        delay(1000);
-        digitalWrite(RED_LED, LOW);
-        delay(1000);
-      }
+        while(true) {
+            digitalWrite(RED_LED, HIGH);
+            delay(1000);
+            digitalWrite(RED_LED, LOW);
+            delay(1000);
+        }
     }
-    
-    //mySerial.begin(9600);
-
-    myDFPlayer.volume(20);
+    delay(500);
+    myDFPlayer.volume(15);
+    updateDisplay(score);
 }
 
 void loop() {
-    //digitalWrite(GREEN_LED, HIGH);
-    //Before start or if they take too long
-    if (!gameRunning) 
-    {
-        //Serial.println("Press to Start!");
+    // Handle the current state of the game
+    switch (currentState) {
+        case WAITING_FOR_START:
+            handleWaitingForStart();
+            break;
         
-        //Input pullup check
-        if (digitalRead(START_BUTTON) == LOW) 
-        {
-            delay(500); // Debounce
-            startGame();
-        }
-    } 
-    else 
-    {
-        //Check current time with no delay
-        unsigned long currentTime = millis();
+        case GAME_RUNNING:
+            handleGameRunning();
+            break;
         
-        //If the user takes too much time
-        if (currentTime - startTime >= timerInterval)
-        {
-            //Flash the red led
+        case GAME_OVER:
+            handleGameOver();
+            break;
+    }
+}
+
+void handleWaitingForStart() {
+    if (digitalRead(START_BUTTON) == LOW) {
+        digitalWrite(GREEN_LED, HIGH);
+        delay(200);
+        digitalWrite(GREEN_LED, LOW);
+        delay(2000); // Debounce
+        startGame();
+        currentState = GAME_RUNNING; // Transition to GAME_RUNNING state
+    }
+}
+
+void handleGameRunning() {
+    unsigned long currentTime = millis();
+    
+    // Check if the player took too long
+    if ((currentTime - startTime) >= timerInterval) {
+        if (!taskSuccess) {
             digitalWrite(RED_LED, HIGH);
             delay(200);
             digitalWrite(RED_LED, LOW);
-
-            gameOver();
-            return;
+            currentState = GAME_OVER; // Transition to GAME_OVER state
+        } else {
+            handleAction();  // Handle the action if successful
         }
-
-        // Check if a sensor is triggered
-        if (taskCompleted())
-        {
-            handleAction();
-        }
+    } else if (!taskSuccess && taskCompleted()) {
+        taskSuccess = true;
+        digitalWrite(GREEN_LED, HIGH);  // Flash green for success
     }
 }
 
-void startGame() 
-{
-    gameRunning = true;
+void handleGameOver() {
+    if (score == 100) {
+        myDFPlayer.play(5);  // Play win sound
+    } else {
+        myDFPlayer.play(4);  // Play game over sound
+    }
+    delay(2000);  // Wait for sound to finish
+    
+    score = 0;
+    updateDisplay(score);  // Reset display
+    
+    // Return to the waiting state
+    currentState = WAITING_FOR_START;
+}
+
+void startGame() {
     score = 0;
     timerInterval = 3000;
+    taskSuccess = false;
+    assignNewTask();
+    
+    if (currentTask == SQUEEZE) {
+        myDFPlayer.play(1);  // Play 0001.mp3
+    } else if (currentTask == YELL) {
+        myDFPlayer.play(2);  // Play 0002.mp3
+    } else if (currentTask == CRANK) {
+        myDFPlayer.play(3);  // Play 0003.mp3
+    }
+    
     startTime = millis();
-    //Serial.println("Game Started!");
+    delay(200);
 }
 
-//For score of 100 or when missed action
-void gameOver() 
-{
-    //Serial.println("Game Over!");
-    if(score==100)
-    {
-      myDFPlayer.play(5);
-      delay(2000);
-    }
-    else
-    {
-      myDFPlayer.play(4);
-      delay(2000);
-    }
-    gameRunning = false;
-    score = 0;
-    updateDisplay(score);
-    
-}
-
-bool checkRotarySensor() 
-{
-    static int lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
-    int clkState = digitalRead(ROTARY_SENSOR_CLK);
-
-    //Checks for any type of rotation
-    //Reference the data sheet for directional input, must use SW then
-    if (clkState != lastClkState) 
-    {
-        lastClkState = clkState;  // Update last state
-        return true;  
-    }
-    
-    return false;
-}
-
-//Handle an action triggered by any input
-void handleAction() 
-{
-    //Increment score
+void handleAction() {
     score++;
-    //Serial.print("Score: ");
-    //Serial.println(score);
-
-    //Check if the score is 100
-    if (score > 99) 
-    {
-        //Serial.println("YOU WIN!");
+    if (score > 99) {
         gameOver();
         return;
     }
 
-    //Speeds up the time per action by 50 seconds with a minimum of half a second, adjust as needed
+    // Speed up the time per action by 50 milliseconds, with a minimum of 500ms
     timerInterval = max(500, timerInterval - 50);
-    startTime = millis();
-
-    //Flash the green led
+    
     digitalWrite(GREEN_LED, HIGH);
     delay(200);
     digitalWrite(GREEN_LED, LOW);
 
-    // Update hex display
     updateDisplay(score);
+    delay(2000);  // Delay between actions
 
-    //After successful attempt, we need a new task
+    // Assign a new task
+    taskSuccess = false;
     assignNewTask();
 
-    if (currentTask == SQUEEZE) 
-    {
-        myDFPlayer.play(1); // Play 0001.mp3
-        delay(2000);
-    } 
-    else if (currentTask == YELL)
-    {
-        myDFPlayer.play(2); // Play 0002.mp3
-        delay(2000);
-    } 
-    else if (currentTask == CRANK) 
-    {
-        myDFPlayer.play(3); // Play 0003.mp3
-        delay(2000);
+    if (currentTask == SQUEEZE) {
+        myDFPlayer.play(1);  // Play 0001.mp3
+    } else if (currentTask == YELL) {
+        myDFPlayer.play(2);  // Play 0002.mp3
+    } else if (currentTask == CRANK) {
+        myDFPlayer.play(3);  // Play 0003.mp3
     }
+
+    startTime = millis();
 }
 
-//Will update score for both hexes
-void updateDisplay(int score) 
-{
+void updateDisplay(int score) {
     int ones = score % 10;  // Extract ones digit
     int tens = (score / 10) % 10;  // Extract tens digit
 
@@ -260,40 +218,49 @@ void updateDisplay(int score)
     sendBCD(ones, ONES_A, ONES_B, ONES_C, ONES_D);
 }
 
-// Will send our BCD values to the decoder chip
-void sendBCD(int value, int pinA, int pinB, int pinC, int pinD)
-{
-    //Write to each pin, the >> is used to shift right, get the value we want in the LSB, then check it by using the mask of 0x1
+void sendBCD(int value, int pinA, int pinB, int pinC, int pinD) {
     digitalWrite(pinA, value & 0x1);
     digitalWrite(pinB, (value >> 1) & 0x1);
     digitalWrite(pinC, (value >> 2) & 0x1);
     digitalWrite(pinD, (value >> 3) & 0x1);
-
 }
 
-//Check for the proper input depending on what is required    
-bool taskCompleted() 
-{
-    switch (currentTask) 
-    {
-        case SQUEEZE: return digitalRead(PRESSURE_SENSOR) == LOW;
-        //Analog input, adjust as needed, goes on scale of 0 to 1023
-        case YELL: return analogRead(MIC) > 800;
+bool taskCompleted() {
+    switch (currentTask) {
+        case SQUEEZE: return analogRead(PRESSURE_SENSOR) > 600;
+        case YELL: return analogRead(MIC) > 1000;
         case CRANK: return checkRotarySensor();
     }
     return false;
 }
 
-void assignNewTask() 
-{
-    //Random task from our three options
+void assignNewTask() {
     currentTask = static_cast<Task>(random(0, 3));
+}
+
+bool checkRotarySensor() {
+    int lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
+    int clkState = digitalRead(ROTARY_SENSOR_CLK);
+
+    if (clkState != lastClkState) {
+        lastClkState = clkState;
+        return true;  
+    }
+
+    return false;
+}
+
+void gameOver() {
+    if (score == 100) {
+        myDFPlayer.play(5);  // Play win sound
+    } else {
+        myDFPlayer.play(4);  // Play game over sound
+    }
+    delay(2000);  // Wait for sound to finish
     
-    //Serial print right now, use for the speaker later?
-    // switch (currentTask)
-    // {
-    //     case SQUEEZE: Serial.println("Task: PRESS the pressure sensor!"); break;
-    //     case YELL: Serial.println("Task: SHOUT into the mic!"); break;
-    //     case CRANK: Serial.println("Task: TURN the rotary encoder!"); break;
-    // }
+    score = 0;
+    updateDisplay(score);  // Reset display
+    
+    // Return to the waiting state
+    currentState = WAITING_FOR_START;
 }
