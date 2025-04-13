@@ -25,7 +25,7 @@ int score = 0;
 int timerInterval = 3000;
 unsigned long startTime;
 bool taskSuccess = false;
-
+int lastClkState;
 // Game states
 enum GameState {
     WAITING_FOR_START,
@@ -94,7 +94,7 @@ void setup() {
         }
     }
     delay(500);
-    myDFPlayer.volume(15);
+    myDFPlayer.volume(20);
     updateDisplay(score);
 }
 
@@ -142,7 +142,14 @@ void handleGameRunning() {
     } else if (!taskSuccess && taskCompleted()) {
         taskSuccess = true;
         digitalWrite(GREEN_LED, HIGH);  // Flash green for success
+    } 
+    else if (!taskSuccess && wrongTaskCompleted()){
+        digitalWrite(RED_LED, HIGH);
+        delay(200);
+        digitalWrite(RED_LED, LOW);
+        currentState = GAME_OVER; // Transition to GAME_OVER state
     }
+
 }
 
 void handleGameOver() {
@@ -153,8 +160,8 @@ void handleGameOver() {
     }
     delay(2000);  // Wait for sound to finish
     
-    score = 0;
-    updateDisplay(score);  // Reset display
+    //score = 0;
+    //updateDisplay(score);  // Reset display
     
     // Return to the waiting state
     currentState = WAITING_FOR_START;
@@ -162,6 +169,7 @@ void handleGameOver() {
 
 void startGame() {
     score = 0;
+    updateDisplay(score);
     timerInterval = 3000;
     taskSuccess = false;
     assignNewTask();
@@ -193,7 +201,7 @@ void handleAction() {
     digitalWrite(GREEN_LED, LOW);
 
     updateDisplay(score);
-    delay(2000);  // Delay between actions
+    //delay(10);  // Delay between actions
 
     // Assign a new task
     taskSuccess = false;
@@ -234,12 +242,22 @@ bool taskCompleted() {
     return false;
 }
 
+bool wrongTaskCompleted() {
+    switch (currentTask) {
+        case SQUEEZE: return analogRead(MIC) > 1000 || checkRotarySensor();
+        case YELL: return analogRead(PRESSURE_SENSOR) > 600 || checkRotarySensor();
+        case CRANK: return analogRead(PRESSURE_SENSOR) > 600 || analogRead(MIC) > 1000;
+    }
+    return false;
+}
+
 void assignNewTask() {
     currentTask = static_cast<Task>(random(0, 3));
+    lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
 }
 
 bool checkRotarySensor() {
-    int lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
+    // int lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
     int clkState = digitalRead(ROTARY_SENSOR_CLK);
 
     if (clkState != lastClkState) {
@@ -250,6 +268,18 @@ bool checkRotarySensor() {
     return false;
 }
 
+// bool checkWrongRotarySensor() {
+//     static int lastClkState = digitalRead(ROTARY_SENSOR_CLK); 
+//     int clkState = digitalRead(ROTARY_SENSOR_CLK);
+
+//     if (clkState != lastClkState) {
+//         lastClkState = clkState;
+//         return true;  
+//     }
+
+//     return false;
+// }
+
 void gameOver() {
     if (score == 100) {
         myDFPlayer.play(5);  // Play win sound
@@ -258,8 +288,8 @@ void gameOver() {
     }
     delay(2000);  // Wait for sound to finish
     
-    score = 0;
-    updateDisplay(score);  // Reset display
+    //score = 0;
+    //updateDisplay(score);  // Reset display
     
     // Return to the waiting state
     currentState = WAITING_FOR_START;
